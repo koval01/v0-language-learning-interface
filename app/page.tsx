@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Onboarding, type UserProfile } from "@/components/language-tutor/onboarding"
+import { ContextLoadedAnimation } from "@/components/language-tutor/context-loaded-animation"
 import { ProgressHeader } from "@/components/language-tutor/progress-header"
 import { LearnedConceptsSidebar } from "@/components/language-tutor/learned-concepts-sidebar"
 import { AssistantMessage } from "@/components/language-tutor/assistant-message"
@@ -18,6 +20,12 @@ const sampleConcepts = [
   { id: "4", name: "Question Formation", mastered: false },
   { id: "5", name: "Word Order", mastered: false },
 ]
+
+const sampleUserDNA = {
+  strongPoints: ["Basic Greetings", "Pronouns", "Numbers"],
+  needsWork: ["Irregular Verbs", "Sentence Order", "Gender Agreement"],
+  vocabularyCount: 47,
+}
 
 interface Message {
   type: "user" | "assistant"
@@ -70,11 +78,54 @@ const initialMessages: Message[] = [
   },
 ]
 
+type AppState = "onboarding" | "loading" | "chat"
+
 export default function LanguageTutorPage() {
+  const [appState, setAppState] = useState<AppState>("onboarding")
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [concepts, setConcepts] = useState(sampleConcepts)
+  const [userDNA, setUserDNA] = useState(sampleUserDNA)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [sessionTime, setSessionTime] = useState(12)
+
+  // Simulate periodic syncing
+  useEffect(() => {
+    if (appState !== "chat") return
+
+    const syncInterval = setInterval(() => {
+      setIsSyncing(true)
+      setTimeout(() => setIsSyncing(false), 1500)
+    }, 30000)
+
+    return () => clearInterval(syncInterval)
+  }, [appState])
+
+  // Session time counter
+  useEffect(() => {
+    if (appState !== "chat") return
+
+    const timeInterval = setInterval(() => {
+      setSessionTime((prev) => prev + 1)
+    }, 60000)
+
+    return () => clearInterval(timeInterval)
+  }, [appState])
+
+  const handleOnboardingComplete = (profile: UserProfile) => {
+    setUserProfile(profile)
+    setAppState("loading")
+  }
+
+  const handleLoadingComplete = () => {
+    setAppState("chat")
+  }
 
   const handleSend = (message: string) => {
+    // Trigger sync animation
+    setIsSyncing(true)
+    setTimeout(() => setIsSyncing(false), 1500)
+
     // Add user message
     setMessages((prev) => [...prev, { type: "user", content: message }])
 
@@ -107,12 +158,42 @@ export default function LanguageTutorPage() {
           { id: "6", name: "Modal Verbs", mastered: false },
         ])
       }
+
+      // Update vocabulary count
+      setUserDNA((prev) => ({
+        ...prev,
+        vocabularyCount: prev.vocabularyCount + 3,
+      }))
     }, 1000)
   }
 
+  // Onboarding Screen
+  if (appState === "onboarding") {
+    return <Onboarding onComplete={handleOnboardingComplete} />
+  }
+
+  // Loading Animation
+  if (appState === "loading" && userProfile) {
+    return (
+      <ContextLoadedAnimation
+        targetLanguage={userProfile.targetLanguage}
+        onComplete={handleLoadingComplete}
+      />
+    )
+  }
+
+  // Main Chat Interface
   return (
     <div className="flex flex-col h-screen">
-      <ProgressHeader topic="Basic Greetings" mastery={45} />
+      <ProgressHeader
+        topic="Basic Greetings"
+        mastery={45}
+        isSyncing={isSyncing}
+        strongPoints={userDNA.strongPoints}
+        needsWork={userDNA.needsWork}
+        vocabularyCount={userDNA.vocabularyCount}
+        sessionTime={sessionTime}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Main Chat Area */}
@@ -173,6 +254,7 @@ export default function LanguageTutorPage() {
         {/* Desktop Sidebar */}
         <LearnedConceptsSidebar
           concepts={concepts}
+          userDNA={userDNA}
           className="hidden lg:block"
         />
 
@@ -189,7 +271,11 @@ export default function LanguageTutorPage() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-72 p-0">
-              <LearnedConceptsSidebar concepts={concepts} className="w-full border-0 h-full" />
+              <LearnedConceptsSidebar
+                concepts={concepts}
+                userDNA={userDNA}
+                className="w-full border-0 h-full"
+              />
             </SheetContent>
           </Sheet>
         </div>
