@@ -8,22 +8,31 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Lightbulb, Send } from "lucide-react"
+import { Lightbulb, Send, Loader2 } from "lucide-react"
 
 interface ChatInputProps {
   onSend: (message: string) => void
   hint?: string
+  disabled?: boolean
+  value?: string
+  onChange?: (value: string) => void
 }
 
-export function ChatInput({ onSend, hint }: ChatInputProps) {
-  const [message, setMessage] = useState("")
+export function ChatInput({ onSend, hint, disabled = false, value, onChange }: ChatInputProps) {
+  const [localMessage, setLocalMessage] = useState("")
   const [showHint, setShowHint] = useState(false)
+
+  // Use controlled or uncontrolled mode
+  const message = value !== undefined ? value : localMessage
+  const setMessage = onChange || setLocalMessage
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (message.trim()) {
+    if (message.trim() && !disabled) {
       onSend(message.trim())
-      setMessage("")
+      if (!onChange) {
+        setLocalMessage("")
+      }
       setShowHint(false)
     }
   }
@@ -56,6 +65,7 @@ export function ChatInput({ onSend, hint }: ChatInputProps) {
               placeholder="Type your message in English or try the target language..."
               className="min-h-[52px] max-h-32 resize-none bg-input border-border rounded-xl pr-12 text-base"
               rows={1}
+              disabled={disabled}
             />
           </div>
           <Tooltip>
@@ -66,6 +76,7 @@ export function ChatInput({ onSend, hint }: ChatInputProps) {
                 size="icon"
                 className="h-[52px] w-[52px] rounded-xl hover:bg-primary/10 hover:text-primary"
                 onClick={() => setShowHint(!showHint)}
+                disabled={disabled}
               >
                 <Lightbulb className="w-5 h-5" />
                 <span className="sr-only">Show hint</span>
@@ -79,9 +90,13 @@ export function ChatInput({ onSend, hint }: ChatInputProps) {
             type="submit"
             size="icon"
             className="h-[52px] w-[52px] rounded-xl"
-            disabled={!message.trim()}
+            disabled={!message.trim() || disabled}
           >
-            <Send className="w-5 h-5" />
+            {disabled ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
             <span className="sr-only">Send message</span>
           </Button>
         </form>

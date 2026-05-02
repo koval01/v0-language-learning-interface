@@ -1,285 +1,127 @@
-"use client"
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { Button } from '@/components/ui/button'
+import { Languages, MessageCircle, Brain, Sparkles, ArrowRight } from 'lucide-react'
 
-import { useState, useEffect } from "react"
-import { Onboarding, type UserProfile } from "@/components/language-tutor/onboarding"
-import { ContextLoadedAnimation } from "@/components/language-tutor/context-loaded-animation"
-import { ProgressHeader } from "@/components/language-tutor/progress-header"
-import { LearnedConceptsSidebar } from "@/components/language-tutor/learned-concepts-sidebar"
-import { AssistantMessage } from "@/components/language-tutor/assistant-message"
-import { UserMessage } from "@/components/language-tutor/user-message"
-import { ChatInput } from "@/components/language-tutor/chat-input"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
-import { BookOpen } from "lucide-react"
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-// Sample data for demonstration
-const sampleConcepts = [
-  { id: "1", name: "Verb: to be (ser/estar)", mastered: true },
-  { id: "2", name: "Present Simple", mastered: true },
-  { id: "3", name: "Subject Pronouns", mastered: true },
-  { id: "4", name: "Question Formation", mastered: false },
-  { id: "5", name: "Word Order", mastered: false },
-]
-
-const sampleUserDNA = {
-  strongPoints: ["Basic Greetings", "Pronouns", "Numbers"],
-  needsWork: ["Irregular Verbs", "Sentence Order", "Gender Agreement"],
-  vocabularyCount: 47,
-}
-
-interface Message {
-  type: "user" | "assistant"
-  content: string
-  assistantData?: {
-    phrase: string
-    words: { original: string; translation: string }[]
-    literalTranslation: string
-    grammarHint: string
-    explanation: string
-  }
-}
-
-const initialMessages: Message[] = [
-  {
-    type: "assistant",
-    content: "",
-    assistantData: {
-      phrase: "Hola, ¿cómo estás?",
-      words: [
-        { original: "Hola,", translation: "Hello," },
-        { original: "¿cómo", translation: "how" },
-        { original: "estás?", translation: "are you?" },
-      ],
-      literalTranslation: "Hello, how are-you?",
-      grammarHint: "Informal Greeting + Question",
-      explanation:
-        "In Spanish, we use 'estás' (the informal 'you' form of 'estar') when asking about someone's current state or feeling. The verb 'estar' is used for temporary states, while 'ser' is used for permanent characteristics. The inverted question mark '¿' at the beginning is unique to Spanish and signals that a question is coming.",
-    },
-  },
-  {
-    type: "user",
-    content: "I'm good, thank you! How do I say 'My name is John'?",
-  },
-  {
-    type: "assistant",
-    content: "",
-    assistantData: {
-      phrase: "Me llamo John.",
-      words: [
-        { original: "Me", translation: "Myself" },
-        { original: "llamo", translation: "I call" },
-        { original: "John.", translation: "John." },
-      ],
-      literalTranslation: "Myself I-call John.",
-      grammarHint: "Reflexive Verb + Present Simple",
-      explanation:
-        "The phrase 'Me llamo' literally translates to 'I call myself.' Spanish uses reflexive verbs where the action reflects back on the subject. 'Llamarse' (to call oneself) is a reflexive verb. The 'me' part indicates that you are doing the action to yourself. This is a very common way to introduce yourself in Spanish!",
-    },
-  },
-]
-
-type AppState = "onboarding" | "loading" | "chat"
-
-export default function LanguageTutorPage() {
-  const [appState, setAppState] = useState<AppState>("onboarding")
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-  const [messages, setMessages] = useState<Message[]>(initialMessages)
-  const [concepts, setConcepts] = useState(sampleConcepts)
-  const [userDNA, setUserDNA] = useState(sampleUserDNA)
-  const [isSyncing, setIsSyncing] = useState(false)
-  const [sessionTime, setSessionTime] = useState(12)
-
-  // Simulate periodic syncing
-  useEffect(() => {
-    if (appState !== "chat") return
-
-    const syncInterval = setInterval(() => {
-      setIsSyncing(true)
-      setTimeout(() => setIsSyncing(false), 1500)
-    }, 30000)
-
-    return () => clearInterval(syncInterval)
-  }, [appState])
-
-  // Session time counter
-  useEffect(() => {
-    if (appState !== "chat") return
-
-    const timeInterval = setInterval(() => {
-      setSessionTime((prev) => prev + 1)
-    }, 60000)
-
-    return () => clearInterval(timeInterval)
-  }, [appState])
-
-  const handleOnboardingComplete = (profile: UserProfile) => {
-    setUserProfile(profile)
-    setAppState("loading")
+  // If user is logged in, redirect to learn page
+  if (user) {
+    redirect('/learn')
   }
 
-  const handleLoadingComplete = () => {
-    setAppState("chat")
-  }
-
-  const handleSend = (message: string) => {
-    // Trigger sync animation
-    setIsSyncing(true)
-    setTimeout(() => setIsSyncing(false), 1500)
-
-    // Add user message
-    setMessages((prev) => [...prev, { type: "user", content: message }])
-
-    // Simulate AI response after a short delay
-    setTimeout(() => {
-      const newAssistantMessage: Message = {
-        type: "assistant",
-        content: "",
-        assistantData: {
-          phrase: "¡Muy bien! Ahora puedes practicar.",
-          words: [
-            { original: "¡Muy", translation: "Very" },
-            { original: "bien!", translation: "good!" },
-            { original: "Ahora", translation: "Now" },
-            { original: "puedes", translation: "you can" },
-            { original: "practicar.", translation: "practice." },
-          ],
-          literalTranslation: "Very good! Now you-can practice.",
-          grammarHint: "Modal Verb + Infinitive",
-          explanation:
-            "'Puedes' comes from the verb 'poder' (to be able to/can), conjugated for 'tú' (informal you). In Spanish, when using modal verbs like 'poder', the second verb stays in its infinitive form (-ar, -er, -ir ending). So 'puedes practicar' follows the pattern: conjugated modal verb + infinitive.",
-        },
-      }
-      setMessages((prev) => [...prev, newAssistantMessage])
-
-      // Simulate adding a new concept
-      if (!concepts.find((c) => c.id === "6")) {
-        setConcepts((prev) => [
-          ...prev,
-          { id: "6", name: "Modal Verbs", mastered: false },
-        ])
-      }
-
-      // Update vocabulary count
-      setUserDNA((prev) => ({
-        ...prev,
-        vocabularyCount: prev.vocabularyCount + 3,
-      }))
-    }, 1000)
-  }
-
-  // Onboarding Screen
-  if (appState === "onboarding") {
-    return <Onboarding onComplete={handleOnboardingComplete} />
-  }
-
-  // Loading Animation
-  if (appState === "loading" && userProfile) {
-    return (
-      <ContextLoadedAnimation
-        targetLanguage={userProfile.targetLanguage}
-        onComplete={handleLoadingComplete}
-      />
-    )
-  }
-
-  // Main Chat Interface
   return (
-    <div className="flex flex-col h-screen">
-      <ProgressHeader
-        topic="Basic Greetings"
-        mastery={45}
-        isSyncing={isSyncing}
-        strongPoints={userDNA.strongPoints}
-        needsWork={userDNA.needsWork}
-        vocabularyCount={userDNA.vocabularyCount}
-        sessionTime={sessionTime}
-      />
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Main Chat Area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6">
-            <div className="max-w-3xl mx-auto space-y-6">
-              {/* Welcome Message */}
-              <div className="text-center py-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="w-8 h-8 text-primary"
-                  >
-                    <path d="m5 8 6 6" />
-                    <path d="m4 14 6-6 2-3" />
-                    <path d="M2 5h12" />
-                    <path d="M7 2h1" />
-                    <path d="m22 22-5-10-5 10" />
-                    <path d="M14 18h6" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-foreground mb-2">
-                  Welcome to your Spanish lesson!
-                </h2>
-                <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                  Click on any word to see its translation. Toggle literal translations
-                  and explore grammar explanations to deepen your understanding.
-                </p>
-              </div>
-
-              {/* Chat Messages */}
-              {messages.map((message, index) => (
-                <div key={index}>
-                  {message.type === "user" ? (
-                    <UserMessage message={message.content} />
-                  ) : message.assistantData ? (
-                    <AssistantMessage {...message.assistantData} />
-                  ) : null}
-                </div>
-              ))}
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border/50">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Languages className="w-5 h-5 text-primary" />
             </div>
+            <span className="font-semibold text-lg">LinguaAI</span>
           </div>
-
-          {/* Chat Input */}
-          <ChatInput
-            onSend={handleSend}
-            hint="Try saying 'Nice to meet you' - use 'Mucho gusto'"
-          />
-        </main>
-
-        {/* Desktop Sidebar */}
-        <LearnedConceptsSidebar
-          concepts={concepts}
-          userDNA={userDNA}
-          className="hidden lg:block"
-        />
-
-        {/* Mobile Sidebar Sheet */}
-        <div className="lg:hidden fixed bottom-24 right-4 z-20">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                size="icon"
-                className="h-12 w-12 rounded-full shadow-lg"
-              >
-                <BookOpen className="w-5 h-5" />
-                <span className="sr-only">View learned concepts</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72 p-0">
-              <LearnedConceptsSidebar
-                concepts={concepts}
-                userDNA={userDNA}
-                className="w-full border-0 h-full"
-              />
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" asChild>
+              <Link href="/auth/login">Sign in</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/auth/sign-up">Get started</Link>
+            </Button>
+          </div>
         </div>
-      </div>
+      </header>
+
+      {/* Hero Section */}
+      <main className="max-w-6xl mx-auto px-4 py-20">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-medium px-4 py-2 rounded-full mb-6">
+            <Sparkles className="w-4 h-4" />
+            AI-Powered Language Learning
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance">
+            Learn any language with your personal AI tutor
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 text-pretty">
+            Designed for absolute beginners. Get instant translations, grammar explanations, 
+            and personalized lessons that adapt to your learning style.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button size="lg" asChild className="text-lg px-8">
+              <Link href="/auth/sign-up">
+                Start learning free
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="text-lg px-8">
+              <Link href="/auth/login">
+                Sign in
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-3 gap-8 mb-20">
+          <div className="bg-card rounded-2xl p-6 border border-border">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+              <MessageCircle className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Smart Conversations</h3>
+            <p className="text-muted-foreground">
+              Learn through natural dialogue. Click any word to see translations, 
+              pronunciations, and usage examples.
+            </p>
+          </div>
+          <div className="bg-card rounded-2xl p-6 border border-border">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+              <Brain className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Grammar Made Simple</h3>
+            <p className="text-muted-foreground">
+              Every phrase comes with grammar hints and detailed explanations. 
+              Understand the why behind every sentence.
+            </p>
+          </div>
+          <div className="bg-card rounded-2xl p-6 border border-border">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+              <Sparkles className="w-6 h-6 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Personalized Progress</h3>
+            <p className="text-muted-foreground">
+              Track your vocabulary, concepts learned, and areas for improvement. 
+              Your AI tutor remembers everything.
+            </p>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="bg-primary/5 rounded-3xl p-8 md:p-12 text-center border border-primary/10">
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">
+            Ready to start your language journey?
+          </h2>
+          <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
+            Join thousands of learners using AI to master new languages. 
+            No credit card required.
+          </p>
+          <Button size="lg" asChild className="text-lg px-8">
+            <Link href="/auth/sign-up">
+              Create free account
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Link>
+          </Button>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 mt-20">
+        <div className="max-w-6xl mx-auto px-4 py-8 text-center text-sm text-muted-foreground">
+          <p>LinguaAI - Your personal AI language tutor</p>
+        </div>
+      </footer>
     </div>
   )
 }

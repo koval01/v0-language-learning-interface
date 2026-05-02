@@ -2,7 +2,7 @@
 
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Cloud, CloudOff, BarChart3 } from "lucide-react"
+import { Cloud, BarChart3, LogOut } from "lucide-react"
 import { SessionSummaryModal } from "./session-summary-modal"
 import { cn } from "@/lib/utils"
 
@@ -15,17 +15,18 @@ interface ProgressHeaderProps {
   needsWork?: string[]
   vocabularyCount?: number
   sessionTime?: number
+  onSignOut?: () => void
 }
 
 export function ProgressHeader({
   topic,
   mastery,
   isSyncing = false,
-  lastSynced,
   strongPoints = [],
   needsWork = [],
   vocabularyCount = 0,
   sessionTime = 0,
+  onSignOut,
 }: ProgressHeaderProps) {
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
@@ -60,7 +61,7 @@ export function ProgressHeader({
         <div className="flex-1 max-w-xs hidden sm:block">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-medium text-muted-foreground">{topic}</span>
-            <span className="text-xs font-medium text-primary">{mastery}%</span>
+            <span className="text-xs font-medium text-primary">{Math.round(mastery)}%</span>
           </div>
           <Progress value={mastery} className="h-2" />
         </div>
@@ -101,6 +102,14 @@ export function ProgressHeader({
               <span className="hidden sm:inline">Summary</span>
             </Button>
           </SessionSummaryModal>
+
+          {/* Sign Out Button */}
+          {onSignOut && (
+            <Button variant="ghost" size="sm" onClick={onSignOut} className="gap-1.5">
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </Button>
+          )}
         </div>
       </div>
     </header>
