@@ -1,6 +1,11 @@
 import { streamText, convertToModelMessages, tool } from 'ai'
+import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+})
 
 export async function POST(req: Request) {
   const { messages, userProfile, sessionId } = await req.json()
@@ -41,7 +46,7 @@ For each teaching moment, structure your response as JSON with these fields:
 Keep responses focused and digestible. One phrase at a time for beginners.`
 
   const result = streamText({
-    model: 'anthropic/claude-sonnet-4-20250514',
+    model: openrouter('nvidia/nemotron-3-super-120b-a12b:free'),
     system: systemPrompt,
     messages: await convertToModelMessages(messages),
     tools: {
